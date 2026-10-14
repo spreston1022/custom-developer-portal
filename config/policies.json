@@ -1,5 +1,20 @@
 {
-  "policies": [],
+  "policies": [
+    {
+      "name": "monetization-inbound",
+      "policyType": "monetization-inbound",
+      "handler": {
+        "export": "MonetizationInboundPolicy",
+        "module": "$import(@zuplo/runtime)",
+        "options": {
+          "cacheTtlSeconds": 60,
+          "meters": {
+            "api_requests": 1
+          }
+        }
+      }
+    }
+  ],
   "corsPolicies": [
     {
       "name": "developer-portal",

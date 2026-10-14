@@ -5,6 +5,33 @@
     "title": "My Zuplo API"
   },
   "paths": {
+    "/v1/hello": {
+      "get": {
+        "summary": "Say hello",
+        "description": "A metered endpoint. Each call counts as one API request against your plan.",
+        "operationId": "say-hello",
+        "tags": [
+          "Hello"
+        ],
+        "x-zuplo-route": {
+          "corsPolicy": "none",
+          "handler": {
+            "export": "default",
+            "module": "$import(./modules/hello)"
+          },
+          "policies": {
+            "inbound": [
+              "monetization-inbound"
+            ]
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
     "/portal-api/usage/meters": {
       "get": {
         "summary": "List meters",
@@ -141,6 +168,15 @@
             }
           }
         ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Your API key from the Developer Portal"
       }
     }
   }
