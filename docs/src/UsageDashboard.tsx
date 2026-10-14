@@ -33,21 +33,11 @@ type StatusStats = {
     stats?: Array<{
       consumer: string;
       totalCalls: number;
-      // Entries are untyped in the Developer API schema; see statusCounts().
-      callsByStatusCode: Array<Record<string, unknown>>;
+      // Map of status code to call count, e.g. { "200": 11, "429": 2 }
+      callsByStatusCode: Record<string, number>;
     }>;
   };
 };
-
-// Normalizes a callsByStatusCode entry, which may be either
-// `{ statusCode, count }` or a `{ "200": 12 }` style map.
-function statusCounts(entry: Record<string, unknown>): Array<[string, number]> {
-  if ("statusCode" in entry) {
-    const count = entry.count ?? entry.calls ?? entry.total ?? 0;
-    return [[String(entry.statusCode), Number(count)]];
-  }
-  return Object.entries(entry).map(([code, count]) => [code, Number(count)]);
-}
 
 const RANGES = [
   { label: "Last 7 days", days: 7, analyticsWindow: "last-7-days" },
@@ -287,7 +277,7 @@ export const UsageDashboard = () => {
                 {requestStats.data?.data.stats?.map((s) => (
                   <Fragment key={s.consumer}>
                     <StatusCount label="Total" count={s.totalCalls} />
-                    {s.callsByStatusCode.flatMap(statusCounts).map(([code, count]) => (
+                    {Object.entries(s.callsByStatusCode).map(([code, count]) => (
                       <StatusCount key={code} label={code} count={count} />
                     ))}
                   </Fragment>
