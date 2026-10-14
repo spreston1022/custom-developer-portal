@@ -1,6 +1,7 @@
 // import { zuploMonetizationPlugin } from "@zuplo/zudoku-plugin-monetization";
 // import { graphqlPlugin } from "@zudoku/plugin-graphql";
 import type { ZudokuConfig } from "zudoku";
+import { UsageDashboard } from "./src/UsageDashboard";
 
 /**
  * Developer Portal Configuration
@@ -66,7 +67,17 @@ const config: ZudokuConfig = {
       to: "/api",
       label: "API Reference",
     },
+    {
+      // Usage dashboard backed by the /portal-api/usage/* gateway routes.
+      // Data access is enforced by the gateway (see modules/usage-api.ts).
+      type: "custom-page",
+      path: "/usage",
+      label: "Usage",
+      element: <UsageDashboard />,
+      display: "auth",
+    },
   ],
+  protectedRoutes: ["/usage"],
   redirects: [{ from: "/", to: "/api" }],
   apis: [
     {

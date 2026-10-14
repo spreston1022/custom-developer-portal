@@ -4,5 +4,153 @@
     "version": "1.0.0",
     "title": "My Zuplo API"
   },
-  "paths": {}
+  "paths": {
+    "/portal-api/usage/meters": {
+      "get": {
+        "summary": "List meters",
+        "description": "Meters defined in the monetization bucket (e.g. API Requests, Credits).",
+        "operationId": "list-usage-meters",
+        "tags": [
+          "Usage"
+        ],
+        "x-zuplo-route": {
+          "corsPolicy": "developer-portal",
+          "handler": {
+            "export": "listMeters",
+            "module": "$import(./modules/usage-api)"
+          },
+          "policies": {
+            "inbound": [
+              "portal-user-auth",
+              "require-usage-admin"
+            ]
+          }
+        }
+      }
+    },
+    "/portal-api/usage/meters/{meterSlug}": {
+      "get": {
+        "summary": "Query meter usage",
+        "description": "Time-bucketed usage for one meter, broken down by consumer (subject).",
+        "operationId": "query-usage-meter",
+        "tags": [
+          "Usage"
+        ],
+        "x-zuplo-route": {
+          "corsPolicy": "developer-portal",
+          "handler": {
+            "export": "queryMeter",
+            "module": "$import(./modules/usage-api)"
+          },
+          "policies": {
+            "inbound": [
+              "portal-user-auth",
+              "require-usage-admin"
+            ]
+          }
+        },
+        "parameters": [
+          {
+            "name": "meterSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Meter slug, e.g. `credits`"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Start time (RFC 3339). Defaults to 30 days ago.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "End time (RFC 3339). Defaults to now.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "windowSize",
+            "in": "query",
+            "required": false,
+            "description": "MINUTE, HOUR, DAY or MONTH. Defaults to DAY.",
+            "schema": {
+              "type": "string",
+              "example": "DAY"
+            }
+          },
+          {
+            "name": "subject",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated consumer names to filter by.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated monetization customer IDs to filter by.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/portal-api/usage/requests": {
+      "get": {
+        "summary": "Request stats by status code",
+        "description": "Request counts by status code for the given consumers.",
+        "operationId": "usage-request-stats",
+        "tags": [
+          "Usage"
+        ],
+        "x-zuplo-route": {
+          "corsPolicy": "developer-portal",
+          "handler": {
+            "export": "requestStats",
+            "module": "$import(./modules/usage-api)"
+          },
+          "policies": {
+            "inbound": [
+              "portal-user-auth",
+              "require-usage-admin"
+            ]
+          }
+        },
+        "parameters": [
+          {
+            "name": "consumers",
+            "in": "query",
+            "required": true,
+            "description": "Comma-separated consumer names.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "description": "last-hour, last-24-hours, last-7-days, last-30-days or last-3-months.",
+            "schema": {
+              "type": "string",
+              "example": "last-7-days"
+            }
+          }
+        ]
+      }
+    }
+  }
 }
