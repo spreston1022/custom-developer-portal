@@ -46,10 +46,8 @@ engineering.
 
 ```
 Browser (docs/src/UsageDashboard.tsx)
-   │  user's Auth0 access token
    ▼
 Gateway /portal-api/usage/*  (config/routes.oas.json)
-   │  auth0-jwt-auth-inbound → require-usage-admin
    │  modules/usage-api.ts adds the Zuplo API key server-side
    ▼
 Zuplo Developer API (dev.zuplo.com)
@@ -61,21 +59,22 @@ Zuplo Developer API (dev.zuplo.com)
 | File | Purpose |
 | --- | --- |
 | `modules/usage-api.ts` | Route handlers that call the Developer API. The Zuplo API key never reaches the browser. |
-| `modules/require-usage-admin.ts` | Allows only listed Auth0 users. This stands in for portal roles. |
-| `config/routes.oas.json`, `config/policies.json` | `/portal-api/usage/*` routes, Auth0 JWT auth, and CORS for the portal. |
+| `config/routes.oas.json`, `config/policies.json` | `/portal-api/usage/*` routes and CORS for the portal. |
 | `docs/src/UsageDashboard.tsx` | The portal page. |
-| `docs/zudoku.config.tsx` | Adds the `/usage` nav item and protects the route. |
+| `docs/zudoku.config.tsx` | Adds the `/usage` nav item. |
 
 ### Setup
 
 1. Copy `.env.example` to `.env` and fill in the usage-page variables. For
    deployed environments, set the same variables under **Settings >
    Environment Variables**, and mark `DEVELOPER_API_KEY` as a secret.
-2. Point `AUTH0_DOMAIN` and `AUTH0_AUDIENCE` at the same Auth0 tenant and API
-   the portal uses (`authentication` in `docs/zudoku.config.tsx`).
-3. Add the Auth0 user IDs of your CS and product users to
-   `USAGE_ADMIN_SUBJECTS`.
-4. Run `npm run dev`, open http://localhost:9200/usage and sign in.
+2. Run `npm run dev` and open http://localhost:9200/usage.
+
+> **Note:** For demo simplicity the usage routes are public, so anyone with the
+> portal URL can see usage for every consumer. Before production, put an
+> authentication policy (for example `auth0-jwt-auth-inbound`) and an admin
+> check on the `/portal-api/usage/*` routes, and sign the page's requests with
+> the user's token (`useZudoku().signRequest`).
 
 Meter usage is attributed to the consumer through each metering event's
 `subject`, which the monetization policy sets to the API key's consumer.

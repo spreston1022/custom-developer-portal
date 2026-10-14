@@ -1,33 +1,19 @@
 {
-  "policies": [
-    {
-      "name": "portal-user-auth",
-      "policyType": "auth0-jwt-auth-inbound",
-      "handler": {
-        "export": "Auth0JwtInboundPolicy",
-        "module": "$import(@zuplo/runtime)",
-        "options": {
-          "allowUnauthenticatedRequests": false,
-          "auth0Domain": "$env(AUTH0_DOMAIN)",
-          "audience": "$env(AUTH0_AUDIENCE)"
-        }
-      }
-    },
-    {
-      "name": "require-usage-admin",
-      "policyType": "custom-code-inbound",
-      "handler": {
-        "export": "default",
-        "module": "$import(./modules/require-usage-admin)"
-      }
-    }
-  ],
+  "policies": [],
   "corsPolicies": [
     {
       "name": "developer-portal",
-      "allowedOrigins": ["$env(DEVELOPER_PORTAL_ORIGIN)"],
-      "allowedMethods": ["GET", "OPTIONS"],
-      "allowedHeaders": ["authorization", "content-type"],
+      "allowedOrigins": [
+        "$env(DEVELOPER_PORTAL_ORIGIN)"
+      ],
+      "allowedMethods": [
+        "GET",
+        "OPTIONS"
+      ],
+      "allowedHeaders": [
+        "authorization",
+        "content-type"
+      ],
       "maxAge": 600
     }
   ]

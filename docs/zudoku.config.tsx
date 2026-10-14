@@ -69,15 +69,12 @@ const config: ZudokuConfig = {
     },
     {
       // Usage dashboard backed by the /portal-api/usage/* gateway routes.
-      // Data access is enforced by the gateway (see modules/usage-api.ts).
       type: "custom-page",
       path: "/usage",
       label: "Usage",
       element: <UsageDashboard />,
-      display: "auth",
     },
   ],
-  protectedRoutes: ["/usage"],
   redirects: [{ from: "/", to: "/api" }],
   apis: [
     {

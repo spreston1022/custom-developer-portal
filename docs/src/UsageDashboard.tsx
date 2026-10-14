@@ -1,6 +1,5 @@
 import { Fragment, useMemo, useState } from "react";
 import { Head } from "zudoku/components";
-import { useAuth, useZudoku } from "zudoku/hooks";
 import { useQuery } from "zudoku/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "zudoku/ui/Card";
 import { NativeSelect, NativeSelectOption } from "zudoku/ui/NativeSelect";
@@ -58,26 +57,16 @@ const RANGES = [
 
 const numberFormat = new Intl.NumberFormat();
 
-function useGatewayFetch() {
-  const context = useZudoku();
-  return async <T,>(path: string): Promise<T> => {
-    // signRequest attaches the signed-in user's access token.
-    const request = await context.signRequest(
-      new Request(`${GATEWAY_URL}${path}`),
-    );
-    const response = await fetch(request);
-    if (!response.ok) {
-      const problem = await response.json().catch(() => null);
-      throw new Error(problem?.detail ?? `Request failed (${response.status})`);
-    }
-    return response.json();
-  };
+async function gatewayFetch<T>(path: string): Promise<T> {
+  const response = await fetch(`${GATEWAY_URL}${path}`);
+  if (!response.ok) {
+    const problem = await response.json().catch(() => null);
+    throw new Error(problem?.detail ?? `Request failed (${response.status})`);
+  }
+  return response.json();
 }
 
 export const UsageDashboard = () => {
-  const auth = useAuth();
-  const gatewayFetch = useGatewayFetch();
-
   const [meterSlug, setMeterSlug] = useState<string>();
   const [rangeIndex, setRangeIndex] = useState(1);
   const [selectedConsumer, setSelectedConsumer] = useState<string>();
@@ -86,7 +75,6 @@ export const UsageDashboard = () => {
   const meters = useQuery({
     queryKey: ["usage-meters"],
     queryFn: () => gatewayFetch<Meter[]>("/portal-api/usage/meters"),
-    enabled: auth.isAuthenticated,
   });
 
   // Default to a "credits" meter if there is one, otherwise the first meter.
@@ -144,26 +132,6 @@ export const UsageDashboard = () => {
       byDay: [...dayTotals.entries()].sort(([a], [b]) => a.localeCompare(b)),
     };
   }, [usage.data, selectedConsumer]);
-
-  if (auth.isPending) return null;
-
-  if (!auth.isAuthenticated) {
-    return (
-      <section className="max-w-3xl py-12">
-        <h1 className="text-3xl font-bold mb-4">API usage</h1>
-        <p className="mb-6 text-muted-foreground">
-          Sign in to see usage for your consumers.
-        </p>
-        <button
-          type="button"
-          className="rounded-md bg-primary px-4 py-2 text-primary-foreground"
-          onClick={() => auth.login()}
-        >
-          Sign in
-        </button>
-      </section>
-    );
-  }
 
   const error = meters.error ?? usage.error;
   const maxDay = Math.max(1, ...byDay.map(([, v]) => v));
