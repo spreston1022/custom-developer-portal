@@ -100,11 +100,12 @@ export const UsageDashboard = () => {
     enabled: Boolean(selectedConsumer),
   });
 
-  const { byConsumer, byDay, total } = useMemo(() => {
+  const { byConsumer, byDay, total, filteredTotal } = useMemo(() => {
     const rows = usage.data?.data ?? [];
     const consumerTotals = new Map<string, number>();
     const dayTotals = new Map<string, number>();
     let total = 0;
+    let filteredTotal = 0;
 
     for (const row of rows) {
       const consumer = row.subject || "(unattributed)";
@@ -112,6 +113,7 @@ export const UsageDashboard = () => {
       if (!selectedConsumer || consumer === selectedConsumer) {
         const day = row.windowStart.slice(0, 10);
         dayTotals.set(day, (dayTotals.get(day) ?? 0) + row.value);
+        filteredTotal += row.value;
       }
       total += row.value;
     }
@@ -126,6 +128,7 @@ export const UsageDashboard = () => {
 
     return {
       total,
+      filteredTotal,
       byConsumer: [...consumerTotals.entries()].sort((a, b) => b[1] - a[1]),
       byDay,
     };
@@ -171,6 +174,19 @@ export const UsageDashboard = () => {
               </NativeSelectOption>
             ))}
           </NativeSelect>
+          <NativeSelect
+            aria-label="Consumer"
+            className="max-w-56"
+            value={selectedConsumer ?? ""}
+            onChange={(e) => setSelectedConsumer(e.target.value || undefined)}
+          >
+            <NativeSelectOption value="">All consumers</NativeSelectOption>
+            {byConsumer.map(([consumer]) => (
+              <NativeSelectOption key={consumer} value={consumer}>
+                {consumer}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
         </div>
       </header>
 
@@ -181,7 +197,15 @@ export const UsageDashboard = () => {
       )}
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label={`Total ${meterName}`} value={numberFormat.format(total)} />
+        <Stat
+          label={selectedConsumer ? `${meterName} · selected consumer` : `Total ${meterName}`}
+          value={numberFormat.format(filteredTotal)}
+          detail={
+            selectedConsumer
+              ? `${Math.round((filteredTotal / Math.max(total, 1)) * 100)}% of ${numberFormat.format(total)} total`
+              : undefined
+          }
+        />
         <Stat label="Active consumers" value={String(byConsumer.length)} />
         <Stat
           label="Top consumer"
@@ -199,7 +223,14 @@ export const UsageDashboard = () => {
             {selectedConsumer && (
               <span className="font-normal text-muted-foreground">
                 {" "}
-                · {selectedConsumer}
+                · {selectedConsumer}{" "}
+                <button
+                  type="button"
+                  className="text-xs underline underline-offset-2"
+                  onClick={() => setSelectedConsumer(undefined)}
+                >
+                  Show all
+                </button>
               </span>
             )}
           </CardTitle>
@@ -207,7 +238,7 @@ export const UsageDashboard = () => {
         <CardContent>
           {usage.isLoading ? (
             <p className="text-muted-foreground">Loading…</p>
-          ) : total === 0 ? (
+          ) : filteredTotal === 0 ? (
             <p className="text-muted-foreground">No usage in this period.</p>
           ) : (
             <DailyChart days={byDay} max={maxDay} unit={meterName} />
@@ -256,7 +287,7 @@ export const UsageDashboard = () => {
             </tbody>
           </table>
           <p className="mt-3 text-xs text-muted-foreground">
-            Select a consumer to filter the chart and see request status codes.
+            Select a consumer here or in the filter above to see their usage and request status codes.
           </p>
         </CardContent>
       </Card>
