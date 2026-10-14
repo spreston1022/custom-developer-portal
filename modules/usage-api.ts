@@ -120,7 +120,14 @@ export async function queryMeter(request: ZuploRequest, context: ZuploContext) {
     });
   }
 
-  const body: Record<string, unknown> = { from, to, windowSize };
+  // Group by `subject` (the consumer) so each row is attributed; without it
+  // the API returns one total per window.
+  const body: Record<string, unknown> = {
+    from,
+    to,
+    windowSize,
+    groupBy: ["subject"],
+  };
   if (query.subject) body.subject = query.subject.split(",");
   if (query.customerId) body.filterCustomerId = query.customerId.split(",");
 
