@@ -116,15 +116,23 @@ export const UsageDashboard = () => {
       total += row.value;
     }
 
+    // One slot per day in the range (UTC), so empty days show as gaps.
+    const byDay: Array<[string, number]> = [];
+    const today = new Date();
+    for (let i = range.days - 1; i >= 0; i--) {
+      const day = new Date(today.getTime() - i * 86_400_000).toISOString().slice(0, 10);
+      byDay.push([day, dayTotals.get(day) ?? 0]);
+    }
+
     return {
       total,
       byConsumer: [...consumerTotals.entries()].sort((a, b) => b[1] - a[1]),
-      byDay: [...dayTotals.entries()].sort(([a], [b]) => a.localeCompare(b)),
+      byDay,
     };
-  }, [usage.data, selectedConsumer]);
+  }, [usage.data, selectedConsumer, range.days]);
 
   const error = meters.error ?? usage.error;
-  const maxDay = Math.max(1, ...byDay.map(([, v]) => v));
+  const maxDay = niceMax(Math.max(0, ...byDay.map(([, v]) => v)));
   const meterName = activeMeter?.name ?? "Usage";
 
   return (
@@ -199,19 +207,10 @@ export const UsageDashboard = () => {
         <CardContent>
           {usage.isLoading ? (
             <p className="text-muted-foreground">Loading…</p>
-          ) : byDay.length === 0 ? (
+          ) : total === 0 ? (
             <p className="text-muted-foreground">No usage in this period.</p>
           ) : (
-            <div className="flex h-48 items-end gap-1" role="img" aria-label={`${meterName} per day`}>
-              {byDay.map(([day, value]) => (
-                <div
-                  key={day}
-                  title={`${day}: ${numberFormat.format(value)}`}
-                  className="flex-1 rounded-t bg-primary/80 hover:bg-primary"
-                  style={{ height: `${(value / maxDay) * 100}%`, minHeight: 2 }}
-                />
-              ))}
-            </div>
+            <DailyChart days={byDay} max={maxDay} unit={meterName} />
           )}
         </CardContent>
       </Card>
@@ -307,3 +306,71 @@ const StatusCount = ({ label, count }: { label: string; count: number }) => (
     <div className="text-xl font-semibold tabular-nums">{numberFormat.format(count)}</div>
   </div>
 );
+
+const dayFormat = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+  timeZone: "UTC",
+});
+const formatDay = (day: string) => dayFormat.format(new Date(`${day}T00:00:00Z`));
+
+// Rounds the axis maximum up to 1, 2 or 5 × a power of ten.
+function niceMax(value: number) {
+  if (value <= 1) return 1;
+  const power = 10 ** Math.floor(Math.log10(value));
+  const step = [1, 2, 5, 10].find((m) => m * power >= value)!;
+  return step * power;
+}
+
+const DailyChart = ({
+  days,
+  max,
+  unit,
+}: {
+  days: Array<[string, number]>;
+  max: number;
+  unit: string;
+}) => {
+  const ticks = [max, max / 2, 0];
+  const labelIndexes = new Set([0, Math.floor((days.length - 1) / 2), days.length - 1]);
+
+  return (
+    <div className="flex gap-2" role="img" aria-label={`${unit} per day`}>
+      <div className="flex h-48 flex-col justify-between text-right text-xs text-muted-foreground tabular-nums">
+        {ticks.map((t) => (
+          <span key={t} className="-translate-y-1/2 first:translate-y-0 last:translate-y-0">
+            {numberFormat.format(t)}
+          </span>
+        ))}
+      </div>
+      <div className="flex-1">
+        <div className="relative h-48 border-b border-l border-border">
+          <div className="absolute inset-x-0 top-0 border-t border-dashed border-border" />
+          <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-border" />
+          <div className="absolute inset-0 flex items-end gap-px px-px">
+            {days.map(([day, value]) => (
+              <div key={day} className="group relative flex h-full flex-1 items-end justify-center">
+                {value > 0 && (
+                  <div
+                    className="w-full max-w-6 rounded-t-sm bg-primary/70 group-hover:bg-primary"
+                    style={{ height: `${(value / max) * 100}%`, minHeight: 2 }}
+                  />
+                )}
+                <div className="pointer-events-none absolute bottom-full z-10 mb-1 hidden whitespace-nowrap rounded border bg-popover px-2 py-1 text-xs text-popover-foreground shadow group-hover:block">
+                  {formatDay(day)}: {numberFormat.format(value)} {unit}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="mt-1 flex text-xs text-muted-foreground">
+          {days.map(([day], i) => (
+            <div key={day} className="flex-1 text-center">
+              {labelIndexes.has(i) ? <span className="whitespace-nowrap">{formatDay(day)}</span> : null}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
